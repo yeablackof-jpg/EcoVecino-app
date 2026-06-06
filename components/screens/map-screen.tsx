@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { 
   ChevronLeftIcon, 
   MapPinIcon, 
@@ -16,8 +16,24 @@ interface MapScreenProps {
 
 type MapFilter = "all" | "trash" | "recycling" | "ecopoints"
 
+interface Location {
+  latitude: number | null
+  longitude: number | null
+  accuracy: number | null
+  loading: boolean
+  error: string | null
+}
+
 export function MapScreen({ onBack }: MapScreenProps) {
   const [activeFilter, setActiveFilter] = useState<MapFilter>("all")
+  const [location, setLocation] = useState<Location>({
+    latitude: null,
+    longitude: null,
+    accuracy: null,
+    loading: true,
+    error: null,
+  })
+  const [userPosition, setUserPosition] = useState({ x: 50, y: 50 })
 
   const filters = [
     { id: "all" as MapFilter, label: "Todos", icon: MapPinIcon },
@@ -25,6 +41,51 @@ export function MapScreen({ onBack }: MapScreenProps) {
     { id: "recycling" as MapFilter, label: "Reciclaje", icon: RecycleIcon },
     { id: "ecopoints" as MapFilter, label: "Eco Puntos", icon: LeafIcon },
   ]
+
+  // Geolocalización en tiempo real
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocation(prev => ({
+        ...prev,
+        error: "Geolocalización no disponible",
+        loading: false,
+      }))
+      return
+    }
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords
+        setLocation({
+          latitude,
+          longitude,
+          accuracy,
+          loading: false,
+          error: null,
+        })
+        // Simular movimiento en el mapa basado en coordenadas reales
+        setUserPosition({
+          x: 50 + ((longitude % 1) * 100),
+          y: 50 + ((latitude % 1) * 100),
+        })
+      },
+      (error) => {
+        console.log("[v0] Geolocation error:", error.message)
+        setLocation(prev => ({
+          ...prev,
+          error: "No se pudo obtener la ubicación",
+          loading: false,
+        }))
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0,
+      }
+    )
+
+    return () => navigator.geolocation.clearWatch(watchId)
+  }, [])
 
   const markers = [
     { id: 1, type: "trash", label: "Basura reportada", x: 25, y: 35 },
@@ -133,15 +194,47 @@ export function MapScreen({ onBack }: MapScreenProps) {
 
         {/* Current location marker */}
         <div 
-          className="absolute transform -translate-x-1/2 -translate-y-1/2 z-20"
-          style={{ left: "50%", top: "50%" }}
+          className="absolute transform -translate-x-1/2 -translate-y-1/2 z-20 transition-all duration-500"
+          style={{ left: `${userPosition.x}%`, top: `${userPosition.y}%` }}
         >
           <div className="w-6 h-6 bg-accent rounded-full border-4 border-card shadow-lg" />
           <div className="absolute inset-0 bg-accent/30 rounded-full animate-ping" />
+          <div className="absolute inset-0 border-2 border-accent/50 rounded-full animate-pulse" />
         </div>
+
+        {/* GPS Status */}
+        {location.loading && (
+          <div className="absolute top-4 left-4 bg-card px-3 py-2 rounded-full flex items-center gap-2 shadow-lg z-30">
+            <div className="w-3 h-3 border-2 border-primary border-r-transparent rounded-full animate-spin" />
+            <span className="text-xs text-foreground">Obteniendo ubicación...</span>
+          </div>
+        )}
+
+        {location.latitude && location.longitude && (
+          <div className="absolute top-4 left-4 bg-card px-3 py-2 rounded-full flex items-center gap-2 shadow-lg z-30">
+            <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+            <span className="text-xs text-foreground">
+              {location.latitude.toFixed(3)}, {location.longitude.toFixed(3)}
+            </span>
+          </div>
+        )}
+
+        {location.error && (
+          <div className="absolute top-4 left-4 bg-destructive/10 px-3 py-2 rounded-full text-xs text-destructive shadow-lg z-30">
+            {location.error}
+          </div>
+        )}
 
         {/* Locate me button */}
         <button 
+          onClick={() => {
+            if (location.latitude && location.longitude) {
+              setUserPosition({
+                x: 50 + ((location.longitude % 1) * 100),
+                y: 50 + ((location.latitude % 1) * 100),
+              })
+            }
+          }}
           className="absolute bottom-24 right-4 w-12 h-12 bg-card rounded-full shadow-lg flex items-center justify-center border border-border active:scale-95 transition-transform"
           aria-label="Mi ubicación"
         >

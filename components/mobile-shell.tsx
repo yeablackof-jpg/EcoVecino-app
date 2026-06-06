@@ -28,14 +28,12 @@ export type Screen =
   | "profile"
 
 export function MobileShell() {
-  const [currentScreen, setCurrentScreen] = useState<Screen>("splash")
+  const [currentScreen, setCurrentScreen] = useState<Screen>("login")
   const [showNav, setShowNav] = useState(false)
-
-  const handleSplashComplete = () => {
-    setCurrentScreen("login")
-  }
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   const handleLogin = () => {
+    setIsAuthenticated(true)
     setCurrentScreen("home")
     setShowNav(true)
   }
@@ -45,6 +43,7 @@ export function MobileShell() {
   }
 
   const handleRegister = () => {
+    setIsAuthenticated(true)
     setCurrentScreen("home")
     setShowNav(true)
   }
@@ -53,16 +52,24 @@ export function MobileShell() {
     setCurrentScreen("login")
   }
 
+  const handleLogout = () => {
+    setIsAuthenticated(false)
+    setCurrentScreen("login")
+    setShowNav(false)
+  }
+
   const renderScreen = () => {
+    if (!isAuthenticated && currentScreen !== "login" && currentScreen !== "register") {
+      return <LoginScreen onLogin={handleLogin} onRegister={handleGoToRegister} />
+    }
+
     switch (currentScreen) {
-      case "splash":
-        return <SplashScreen onComplete={handleSplashComplete} />
       case "login":
         return <LoginScreen onLogin={handleLogin} onRegister={handleGoToRegister} />
       case "register":
         return <RegisterScreen onBack={handleBackToLogin} onRegister={handleRegister} />
       case "home":
-        return <HomeScreen onNavigate={setCurrentScreen} />
+        return <HomeScreen onNavigate={setCurrentScreen} onLogout={handleLogout} />
       case "map":
         return <MapScreen onBack={() => setCurrentScreen("home")} />
       case "report":
@@ -76,26 +83,26 @@ export function MobileShell() {
       case "community":
         return <CommunityScreen onBack={() => setCurrentScreen("home")} />
       case "profile":
-        return <ProfileScreen onBack={() => setCurrentScreen("home")} />
+        return <ProfileScreen onBack={() => setCurrentScreen("home")} onLogout={handleLogout} />
       default:
-        return <HomeScreen onNavigate={setCurrentScreen} />
+        return <LoginScreen onLogin={handleLogin} onRegister={handleGoToRegister} />
     }
   }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-[390px] h-[844px] bg-card rounded-[3rem] shadow-2xl overflow-hidden relative border-8 border-foreground/10">
+      <div className="w-full max-w-[390px] h-[844px] bg-card rounded-[3rem] shadow-2xl overflow-hidden relative border-8 border-foreground/10 flex flex-col">
         {/* Phone notch */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-foreground/10 rounded-b-2xl z-50" />
         
-        {/* Screen content */}
-        <div className="h-full overflow-hidden relative">
-          <div className={`h-full ${showNav ? "pb-20" : ""} overflow-y-auto`}>
+        {/* Screen content - scrollable */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className={`flex-1 overflow-y-auto overflow-x-hidden`}>
             {renderScreen()}
           </div>
           
           {/* Bottom Navigation */}
-          {showNav && currentScreen !== "splash" && (
+          {showNav && currentScreen !== "splash" && isAuthenticated && (
             <BottomNavigation 
               currentScreen={currentScreen} 
               onNavigate={setCurrentScreen} 

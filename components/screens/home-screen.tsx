@@ -15,9 +15,10 @@ import type { Screen } from "../mobile-shell"
 
 interface HomeScreenProps {
   onNavigate: (screen: Screen) => void
+  onLogout?: () => void
 }
 
-export function HomeScreen({ onNavigate }: HomeScreenProps) {
+export function HomeScreen({ onNavigate, onLogout }: HomeScreenProps) {
   const quickActions = [
     { id: "report", icon: CameraIcon, label: "Reportar Basura", color: "bg-primary", screen: "report" as Screen },
     { id: "map", icon: MapPinIcon, label: "Mapa Ambiental", color: "bg-accent", screen: "map" as Screen },

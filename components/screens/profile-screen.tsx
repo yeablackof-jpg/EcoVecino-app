@@ -14,9 +14,10 @@ import {
 
 interface ProfileScreenProps {
   onBack: () => void
+  onLogout?: () => void
 }
 
-export function ProfileScreen({ onBack }: ProfileScreenProps) {
+export function ProfileScreen({ onBack, onLogout }: ProfileScreenProps) {
   const user = {
     name: "Carlos García",
     email: "carlos.garcia@email.com",
